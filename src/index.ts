@@ -1,35 +1,94 @@
-import * as itowns from 'itowns';
+import { Vector3 } from 'three';
+import { View, PlanarControls, PNTS_SHAPE } from 'itowns';
+// @ts-ignore: COPCSource, COPCLayer not released yet
+import { CopcSource, CopcLayer } from 'itowns';
+import GUI from 'lil-gui';
 
-// Get our `<div id="viewerId">` element. When creating a `View`, a canvas will
-// be appended to this element.
+import { PointCloudGUI } from './debug/PointCloudGUI';
+
+import type { PerspectiveCamera } from 'three';
+import type { PointCloudLayer } from 'itowns';
+
+// TODO: add types not officially released in this repository
+
+const uri = new URL(window.location.href);
+const gui = new GUI();
+
 const viewerDiv = document.getElementById('viewerDiv') as HTMLDivElement;
+const view = new View('EPSG:4326', viewerDiv);
 
-// Define an initial camera position
-const placement = {
-    coord: new itowns.Coordinates('EPSG:4326', 2.351323, 48.856712),
-    range: 25000000,
-};
+// @ts-ignore: argument not in type definitions
+const controls = new PlanarControls(view);
+view.mainLoop.gfxEngine.renderer.setClearColor(0xdddddd);
 
-// Create an empty Globe View
-const view = new itowns.GlobeView(viewerDiv, placement);
+let layer: PointCloudLayer; // COPCLayer
 
-// Declare your data source configuration. In this context, those are the
-// parameters used in the WMTS requests.
-const orthoConfig = {
-    'url': 'https://data.geopf.fr/wmts',
-    'crs': 'EPSG:3857',
-    'format': 'image/jpeg',
-    'name': 'ORTHOIMAGERY.ORTHOPHOTOS',
-    'tileMatrixSet': 'PM',
-};
 
-// Instantiate the WMTS source of your imagery layer.
-const imagerySource = new itowns.WMTSSource(orthoConfig);
+function onLayerReady(layer: PointCloudLayer) {
+    const camera = view.camera.camera3D as PerspectiveCamera;
 
-// Create your imagery layer
-const imageryLayer = new itowns.ColorLayer('imagery', {
-    source: imagerySource,
-});
+    const lookAt = new Vector3();
+    const size = new Vector3();
+    const root = layer.root;
 
-// Add it to source view!
-view.addLayer(imageryLayer);
+    root.bbox.getSize(size);
+    root.bbox.getCenter(lookAt);
+
+    camera.far = 2.0 * size.length();
+
+    controls.groundLevel = root.bbox.min.z;
+    const position = root.bbox.min.clone().add(
+        size.multiply({ x: 1, y: 1, z: size.x / size.z }),
+    );
+
+    camera.position.copy(position);
+    camera.lookAt(lookAt);
+    camera.updateProjectionMatrix();
+
+    view.notifyChange(camera);
+}
+
+
+function setUrl(url: string) {
+    if (!url) return;
+
+    uri.searchParams.set('copc', url);
+    history.replaceState(null, '', `?${uri.searchParams.toString()}`);
+
+    load(url);
+}
+
+
+function load(url: string) {
+    // @ts-ignore: not released yet
+    const source = new CopcSource({ url });
+
+    if (layer) {
+        view.removeLayer('COPC');
+        view.notifyChange();
+        layer.delete();
+    }
+
+    // @ts-ignore: not released yet
+    layer = new CopcLayer('COPC', {
+        source,
+        crs: view.referenceCrs,
+        sseThreshold: 1,
+        pointBudget: 3500000,
+        material: {
+            minAttenuatedSize: 2,
+            maxAttenuatedSize: 5,
+            shape: PNTS_SHAPE.SQUARE,
+        },
+    });
+    view.addLayer(layer).then(onLayerReady);
+    new PointCloudGUI(view, layer, {
+        title: layer.id,
+        parent: gui
+    });
+}
+
+const copcParams = uri.searchParams.get('copc');
+if (copcParams) {
+    setUrl(copcParams);
+}
