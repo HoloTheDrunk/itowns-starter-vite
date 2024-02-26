@@ -1,0 +1,5 @@
+include:
+  - project: geoplateforme/templates
+    ref: main
+    file:
+      - '/ci/docker.yml'
