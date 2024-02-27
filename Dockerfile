@@ -10,4 +10,4 @@ FROM nginxinc/nginx-unprivileged:stable-alpine
 # Static build
 COPY --from=builder /app/dist /usr/share/nginx/html/
 
-EXPOSE 8000
+EXPOSE 8080
