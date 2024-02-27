@@ -16,7 +16,7 @@
     },
     "dependencies": {
         "buffer": "^6.0.3",
-        "itowns": "npm:itowns-demo-lidar@^2.42.1",
+        "itowns": "npm:itowns-demo-lidar@^2.42.2",
         "lil-gui": "^0.19.1",
         "proj4": "^2.9.2",
         "three": "^0.159.0"
