@@ -1,4 +1,3 @@
-// @ts-ignore: added in 2.42
 import { PNTS_MODE, PNTS_SHAPE, PNTS_SIZE_MODE } from 'itowns';
 import GUI from 'lil-gui';
 
@@ -116,12 +115,10 @@ export class PointCloudGUI extends GUI {
                     minIntensity.show();
                     maxIntensity.show();
                     return;
-                // @ts-ignore: not released yet
                 case PNTS_MODE.ELEVATION:
                     // TODO: minElevation/maxElevation when layer ready
                     gradient.show();
                     return;
-                // @ts-ignore: not released yet
                 case PNTS_MODE.SCAN_ANGLE:
                     minScanAngle.show();
                     maxScanAngle.show();

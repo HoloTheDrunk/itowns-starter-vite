@@ -1,7 +1,11 @@
 import { Vector3 } from 'three';
-import { View, PlanarControls, PNTS_SHAPE } from 'itowns';
-// @ts-ignore: COPCSource, COPCLayer not released yet
-import { CopcSource, CopcLayer } from 'itowns';
+import {
+    View,
+    PlanarControls,
+    CopcSource,
+    CopcLayer,
+    PNTS_SHAPE
+} from 'itowns';
 import GUI from 'lil-gui';
 
 import { PointCloudGUI } from './debug/PointCloudGUI';
@@ -60,7 +64,6 @@ function setUrl(url: string) {
 
 
 function load(url: string) {
-    // @ts-ignore: not released yet
     const source = new CopcSource({ url });
 
     if (layer) {
@@ -69,7 +72,6 @@ function load(url: string) {
         layer.delete();
     }
 
-    // @ts-ignore: not released yet
     layer = new CopcLayer('COPC', {
         source,
         crs: view.referenceCrs,
