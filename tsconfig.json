@@ -6,9 +6,15 @@
         "noImplicitReturns": true,
         "noImplicitAny": true,
         "module": "es2022",
-        "moduleResolution": "node",
+        "moduleResolution": "Node",
         "target": "es6",
-        "allowJs": true
+        "allowJs": true,
+        "paths": {
+            "three/addons/*": [
+                "node_modules/@types/three/examples/jsm/*"
+            ],
+        },
+        "baseUrl": "./"
     },
     "include": [
         "./src/**.*"
