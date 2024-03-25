@@ -1,5 +1,5 @@
-import { PNTS_MODE, PNTS_SHAPE, PNTS_SIZE_MODE } from 'itowns';
-import GUI from 'lil-gui';
+import { PNTS_SHAPE } from 'itowns';
+import GUI, { Controller } from 'lil-gui';
 
 import type { View, PointCloudLayer } from 'itowns';
 
@@ -15,6 +15,17 @@ const GRADIENTS = [
     'RAINBOW',
     'CONTOUR',
 ];
+
+const PNTS_MODE = {
+    INTENSITY: 1,
+    CLASSIFICATION: 2,
+    ELEVATION: 3,
+    RETURN_NUMBER: 4,
+    RETURN_TYPE: 5,
+    RETURN_COUNT: 6,
+    POINT_SOURCE_ID: 7,
+    SCAN_ANGLE: 8,
+} as const;
 
 interface PointCloudGUIOptions {
     autoPlace?: boolean;
@@ -37,19 +48,19 @@ export class PointCloudGUI extends GUI {
         const material = layer.material;
 
         const update = () => view.notifyChange(layer, true);
-        this.add(layer, 'visible')
-            .name('Visible')
-            .onChange(update);
+        // this.add(layer, 'visible')
+        //    .name('Visible')
+        //    .onChange(update);
         this.add(layer, 'opacity', 0, 1)
             .name('Opacity')
             .onChange(update);
-        this.add(layer, 'pointBudget', 0, 12000000)
-            .step(500000)
-            .name('Point budget')
-            .onChange(update);
-        this.add(layer, 'sseThreshold')
-            .name('SSE threshold')
-            .onChange(update);
+        // this.add(layer, 'pointBudget', 0, 12000000)
+        //    .step(500000)
+        //    .name('Point budget')
+        //    .onChange(update);
+        // this.add(layer, 'sseThreshold')
+        //    .name('SSE threshold')
+        //    .onChange(update);
 
 
         // Point styling
@@ -60,13 +71,13 @@ export class PointCloudGUI extends GUI {
                 .name(name)
                 .onChange(update);
 
-        this.pointUI.add(material, 'sizeMode', PNTS_SIZE_MODE)
-            .name('Size mode')
-            .onChange(update);
+        // this.pointUI.add(material, 'sizeMode', PNTS_SIZE_MODE)
+        //    .name('Size mode')
+        //    .onChange(update);
         this.pointUI.add(material, 'shape', PNTS_SHAPE)
             .name('Shape')
             .onChange(update);
-        addPointSize(layer, 'pointSize', 'Size');
+        // addPointSize(layer, 'pointSize', 'Size');
         addPointSize(material, 'minAttenuatedSize', 'Min size');
         addPointSize(material, 'maxAttenuatedSize', 'Max size');
 
@@ -79,13 +90,13 @@ export class PointCloudGUI extends GUI {
                 .onChange(update);
 
         const mode = this.attributeUI.add(material, 'mode', PNTS_MODE)
-            .name('Mode')
+            .name('Name')
             .onChange(update);
 
-        const gradient = this.attributeUI.add(material, 'gradient', GRADIENTS)
-            .name('Gradient')
-            .hide()
-            .onChange(update);
+        //const gradient = this.attributeUI.add(material, 'gradient', GRADIENTS)
+        //    .name('Gradient')
+        //    .hide()
+        //    .onChange(update);
 
         const minIntensity = addUint16Property(layer, 'minIntensityRange')
             .name('Min intensity')
@@ -103,21 +114,43 @@ export class PointCloudGUI extends GUI {
             .name('Max scan angle')
             .hide();
 
-        mode.onFinishChange((event: PNTS_MODE) => {
-            gradient.hide();
+        let minElevation: Controller | undefined;
+        let maxElevation: Controller | undefined;
+        layer.whenReady.then(() => {
+            const min: number = (layer as any).minElevationRange;
+            const max: number = (layer as any).maxElevationRange;
+
+            minElevation =
+                this.attributeUI.add(layer, 'minElevationRange', min, max)
+                .name('Min elevation')
+                .setValue(min)
+                .onChange(update)
+                .hide();
+            maxElevation =
+                this.attributeUI.add(layer, 'maxElevationRange', min, max)
+                .name('Max elevation')
+                .setValue(max)
+                .onChange(update)
+                .hide();
+        });
+
+        mode.onFinishChange((event: any) => {
+            // gradient.hide();
             minIntensity.hide();
             maxIntensity.hide();
             minScanAngle.hide();
             maxScanAngle.hide();
+            minElevation?.hide();
+            maxElevation?.hide();
             switch (event) {
                 case PNTS_MODE.INTENSITY:
-                    gradient.show();
+                    // gradient.show();
                     minIntensity.show();
                     maxIntensity.show();
                     return;
                 case PNTS_MODE.ELEVATION:
-                    // TODO: minElevation/maxElevation when layer ready
-                    gradient.show();
+                    minElevation?.show();
+                    maxElevation?.show();
                     return;
                 case PNTS_MODE.SCAN_ANGLE:
                     minScanAngle.show();

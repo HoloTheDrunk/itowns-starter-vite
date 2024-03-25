@@ -7,8 +7,19 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
         <link rel="stylesheet" href="styles/itowns.css">
+
+        <style type="text/css">
+            #description {
+                position: absolute;
+                top: 10px;
+                left: 10px;
+                overflow: hidden;
+                z-index: 2;
+            }
+        </style>
     </head>
     <body>
+        <div id="description"></div>
         <div id="viewerDiv"></div>
         <script src="./main.bundle.js"></script>
     </body>

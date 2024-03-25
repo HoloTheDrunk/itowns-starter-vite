@@ -36,6 +36,11 @@ const config = (env) => {
                         loader: 'ts-loader',
                     },
                 },
+                {
+                    test: /\.glsl$/,
+                    exclude: /node_modules/,
+                    type : 'asset/source',
+                },
             ],
         },
         resolve: {
