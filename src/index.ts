@@ -1,5 +1,5 @@
 import proj4 from 'proj4';
-import {  Color, DepthTexture, LinearFilter, NearestFilter, UnsignedShortType, Vector3, WebGLRenderTarget } from 'three';
+import { DepthTexture, LinearFilter, NearestFilter, OrthographicCamera, UnsignedShortType, Vector3, WebGLRenderTarget } from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass';
 import {
@@ -11,8 +11,6 @@ import {
     CopcSource,
     CopcLayer,
     PNTS_SHAPE,
-    WFSSource,
-    FeatureGeometryLayer,
 } from 'itowns';
 import GUI from 'lil-gui';
 
@@ -21,7 +19,7 @@ import { PlanarGUI } from './debug/TiledGUI';
 import { RasterGUI } from './debug/RasterGUI';
 import { EDLPass } from './addons/postprocessing/EDLPass';
 
-import type { Extent, PointCloudLayer } from 'itowns';
+import type { Extent, PointCloudLayer, PointsMaterial } from 'itowns';
 
 /**
  * Replace IGN's LiDAR URL by a proxy one due to CORS issues.
@@ -47,17 +45,17 @@ function setupRenderPipeline(view: View) {
     target.depthTexture = new DepthTexture(view.camera.width, view.camera.height);
     target.depthTexture.type = UnsignedShortType;
 
-    const composer = new EffectComposer(view.renderer as any, target);
-    const renderPass = new RenderPass(view.scene as any, view.camera.camera3D as any);
+    const composer = new EffectComposer(view.renderer, target);
+    const renderPass = new RenderPass(view.scene, view.camera.camera3D);
     const edlPass = new EDLPass(
-        view.camera3D as any,
+        view.camera3D as OrthographicCamera,
         view.camera.width,
         view.camera.height,
     );
     composer.addPass(renderPass);
     composer.addPass(edlPass);
 
-    // @ts-ignore
+    // @ts-expect-error dynamic property
     view.render = function() {
         composer.render();
     };
@@ -112,8 +110,6 @@ function setupRasterLayer(view: PlanarView, extent: Extent, gui?: GUI) {
         crs: 'EPSG:2154',
         width: 256,
         format: 'image/png',
-        // @ts-ignore
-        extent: extent,
     });
 
     const planLayer = new ColorLayer('wms_plan', {
@@ -141,7 +137,7 @@ function buildSource(url: string): Promise<CopcSource> {
     };
 
     const source = new CopcSource({
-        // @ts-ignore
+        // @ts-expect-error typing file is not up to date
         networkOptions,
         crs: 'EPSG:2154',
         url: fixUrl(url),
@@ -154,7 +150,7 @@ proj4.defs('EPSG:2154', '+proj=lcc +lat_1=45.25 +lat_2=46.75 +lat_0=46 +lon_0=3 
 
 const uri = new URL(window.location.href);
 const guiState = {
-    version() {},
+    version() { },
 };
 const gui = new GUI({
     title: '3D Layers',
@@ -170,7 +166,7 @@ let layer: PointCloudLayer; // COPCLayer
 let view: PlanarView;
 
 function onLayerReady(layer: PointCloudLayer) {
-    const camera = view.camera.camera3D as any;
+    const camera = view.camera.camera3D as OrthographicCamera;
 
     const lookAt = new Vector3();
     const size = new Vector3();
@@ -231,8 +227,8 @@ async function load(url: string) {
         },
     });
 
-    (layer.material as any).mode = 2;
-    const promise: any = View.prototype.addLayer.call(view, layer);
+    (layer.material as PointsMaterial).mode = 2;
+    const promise = View.prototype.addLayer.call(view, layer) as Promise<PointCloudLayer>;
     promise.then(onLayerReady);
     new PointCloudGUI(view, layer, {
         title: layer.id,
