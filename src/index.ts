@@ -1,4 +1,3 @@
-import proj4 from 'proj4';
 import { DepthTexture, LinearFilter, NearestFilter, OrthographicCamera, UnsignedShortType, Vector3, WebGLRenderTarget } from 'three';
 import { EffectComposer } from 'three/addons/postprocessing/EffectComposer';
 import { RenderPass } from 'three/addons/postprocessing/RenderPass';
@@ -11,6 +10,7 @@ import {
     CopcSource,
     CopcLayer,
     PNTS_SHAPE,
+    CRS,
 } from 'itowns';
 import GUI from 'lil-gui';
 
@@ -18,8 +18,28 @@ import { PointCloudGUI } from './debug/PointCloudGUI';
 import { PlanarGUI } from './debug/TiledGUI';
 import { RasterGUI } from './debug/RasterGUI';
 import { EDLPass } from './addons/postprocessing/EDLPass';
+import { run } from './node-ver';
 
 import type { Extent, PointCloudLayer, PointsMaterial } from 'itowns';
+
+CRS.defs('EPSG:2154', '+proj=lcc +lat_1=45.25 +lat_2=46.75 +lat_0=46 +lon_0=3 +x_0=1700000 +y_0=5200000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs');
+
+const uri = new URL(window.location.href);
+const guiState = {
+    version() { },
+};
+const gui = new GUI({
+    title: '3D Layers',
+});
+gui.add(guiState, 'version').name('19/04/2024 Build');
+
+const viewerDiv = document.getElementById('viewerDiv') as HTMLDivElement;
+// const mailtoAnchor = document.getElementById('mailto') as HTMLAnchorElement;
+
+// view.mainLoop.gfxEngine.renderer.setClearColor(0xdddddd);
+
+let layer: PointCloudLayer; // COPCLayer
+let view: PlanarView;
 
 /**
  * Replace IGN's LiDAR URL by a proxy one due to CORS issues.
@@ -55,7 +75,6 @@ function setupRenderPipeline(view: View) {
     composer.addPass(renderPass);
     composer.addPass(edlPass);
 
-    // @ts-expect-error dynamic property
     view.render = function() {
         composer.render();
     };
@@ -146,25 +165,6 @@ function buildSource(url: string): Promise<CopcSource> {
     return source.whenReady;
 }
 
-proj4.defs('EPSG:2154', '+proj=lcc +lat_1=45.25 +lat_2=46.75 +lat_0=46 +lon_0=3 +x_0=1700000 +y_0=5200000 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs');
-
-const uri = new URL(window.location.href);
-const guiState = {
-    version() { },
-};
-const gui = new GUI({
-    title: '3D Layers',
-});
-gui.add(guiState, 'version').name('19/04/2024 Build');
-
-const viewerDiv = document.getElementById('viewerDiv') as HTMLDivElement;
-// const mailtoAnchor = document.getElementById('mailto') as HTMLAnchorElement;
-
-// view.mainLoop.gfxEngine.renderer.setClearColor(0xdddddd);
-
-let layer: PointCloudLayer; // COPCLayer
-let view: PlanarView;
-
 function onLayerReady(layer: PointCloudLayer) {
     const camera = view.camera.camera3D as OrthographicCamera;
 
@@ -188,25 +188,10 @@ function onLayerReady(layer: PointCloudLayer) {
     view.notifyChange(camera);
 }
 
-function setUrl(url: string) {
-    if (!url) return;
-
-    uri.searchParams.set('copc', url);
-    history.pushState(null, '', `?${uri.searchParams.toString()}`);
-
-    // const subject = `[DEMO] Retour sur la visualisation COPC`;
-
-    // const body = `URL de la tuile: ${url}`;
-
-    // mailtoAnchor.href = 'mailto:quentin.bouillaguet@ign.fr?'
-    //    + `subject=${subject}`
-    //    + `&body=${body}`;
-
-    load(url);
-}
 
 async function load(url: string) {
     const source = await buildSource(url);
+    // @ts-expect-error dynamic field
     view = setupView(source.extent);
 
     if (layer) {
@@ -239,10 +224,29 @@ async function load(url: string) {
         parent: gui,
     });
 
+    // @ts-expect-error dynamic field
     setupRasterLayer(view, source.extent, terrainGUI.addFolder('Layers'));
+}
+
+function setUrl(uri: URL, url: string) {
+    if (!url) return;
+
+    uri.searchParams.set('copc', url);
+    history.pushState(null, '', `?${uri.searchParams.toString()}`);
+
+    // const subject = `[DEMO] Retour sur la visualisation COPC`;
+
+    // const body = `URL de la tuile: ${url}`;
+
+    // mailtoAnchor.href = 'mailto:quentin.bouillaguet@ign.fr?'
+    //    + `subject=${subject}`
+    //    + `&body=${body}`;
+
+    // load(url);
+    run(url);
 }
 
 const copcParams = uri.searchParams.get('copc');
 if (copcParams) {
-    setUrl(copcParams);
+    setUrl(uri, copcParams);
 }

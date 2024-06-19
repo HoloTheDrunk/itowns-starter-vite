@@ -1,31 +1,25 @@
 import {
-    Color,
-    DepthStencilFormat,
-    DepthTexture,
-    HalfFloatType,
     NoBlending,
-    ShaderMaterial,
-    UnsignedInt248Type,
+    Vector2,
     WebGLRenderTarget,
 } from 'three';
 import { Pass, FullScreenQuad } from 'three/addons/postprocessing/Pass.js';
 import { EDLShader } from '../materials/EDLShader';
 
 import type {
-    ColorRepresentation,
-    Material,
     OrthographicCamera,
     PerspectiveCamera,
     WebGLRenderer,
 } from 'three';
+// import * as itowns from 'itowns';
 
 function generateVectors(kernelSize: number): Float32Array {
     const kernel = new Float32Array(kernelSize * 2);
 
     for (let i = 0; i < kernelSize; ++i) {
         const rotation = 2 * i + Math.PI / kernelSize;
-        kernel[ i * 2 + 0 ] = Math.cos( rotation );
-        kernel[ i * 2 + 1 ] = Math.sin( rotation );
+        kernel[i * 2 + 0] = Math.cos(rotation);
+        kernel[i * 2 + 1] = Math.sin(rotation);
     }
 
     return kernel;
@@ -48,8 +42,9 @@ class EDLPass extends Pass {
     width: number;
     height: number;
     camera: CameraLike;
-    // kernelRadius: number; TODO
-    edlMaterial: ShaderMaterial;
+    // TODO:
+    // kernelRadius: number;
+    edlMaterial: EDLShader;
     private _kernel: Float32Array;
     private _fsQuad: FullScreenQuad;
 
@@ -70,13 +65,18 @@ class EDLPass extends Pass {
             blending: NoBlending,
         });
 
-        this.edlMaterial.defines.KERNEL_SIZE = kernelSize;
-
-        const uniforms = this.edlMaterial.uniforms;
-        uniforms.kernel.value = this._kernel;
-        uniforms.resolution.value.set(this.width, this.height);
-        uniforms.cameraNear.value = this.camera.near;
-        uniforms.cameraFar.value = this.camera.far;
+        this.edlMaterial = new EDLShader({
+            blending: NoBlending,
+            uniforms: {
+                kernel: { value: this._kernel },
+                resolution: { value: new Vector2(this.width, this.height) },
+                cameraNear: { value: this.camera.near },
+                cameraFar: { value: this.camera.far },
+            },
+            defines: {
+                KERNEL_SIZE: kernelSize,
+            },
+        });
 
         this._fsQuad = new FullScreenQuad();
     }
@@ -97,7 +97,7 @@ class EDLPass extends Pass {
         this.edlMaterial.uniforms.tDiffuse.value = readBuffer.texture;
 
         renderer.setRenderTarget(this.renderToScreen ? null : writeBuffer);
-        
+
         this._fsQuad.material = this.edlMaterial;
         this._fsQuad.render(renderer);
     }
@@ -105,7 +105,6 @@ class EDLPass extends Pass {
     dispose() {
         this._fsQuad.dispose();
     }
-
 }
 
 export { EDLPass };

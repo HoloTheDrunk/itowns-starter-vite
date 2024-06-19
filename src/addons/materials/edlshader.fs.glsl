@@ -40,7 +40,7 @@ void main() {
     float depth = getLinearDepth(vUv);
     float res = shadow(depth);
 
-    float edl = exp(- 300.0 * res * 6000.);
+    float edl = exp(-300.0 * res * 6000.);
     vec4 color = texture2D(tDiffuse, vUv);
 
     gl_FragColor = vec4(color.rgb * edl, color.a);

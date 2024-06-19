@@ -1,5 +1,3 @@
-/* eslint-disable */
-
 import { ShaderMaterial, Vector2 } from 'three';
 import vertexShader from './edlshader.vs.glsl';
 import fragmentShader from './edlshader.fs.glsl'
@@ -22,8 +20,13 @@ export interface EDLShaderParameter extends ShaderMaterialParameters {
 
 export class EDLShader extends ShaderMaterial {
     constructor(params: EDLShaderParameter) {
+        const {
+            uniforms,
+            defines,
+            ...rest
+        } = params;
+
         super({
-            ...params,
             uniforms: {
                 tDepth: { value: null },
                 tDiffuse: { value: null },
@@ -31,14 +34,15 @@ export class EDLShader extends ShaderMaterial {
                 cameraNear: { value: null },
                 cameraFar: { value: null },
                 resolution: { value: new Vector2() },
-            
+                ...uniforms,
             },
-            vertexShader: params.vertexShader ?? vertexShader,
-            fragmentShader: params.fragmentShader ?? fragmentShader,
+            vertexShader,
+            fragmentShader,
+            ...rest,
         });
 
         this.defines = {
-            KERNEL_SIZE: 8,
+            KERNEL_SIZE: defines?.KERNEL_SIZE ?? 8,
         };
     }
 }
