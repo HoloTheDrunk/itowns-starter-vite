@@ -64,7 +64,7 @@ function onLayerReady(view: View, layer: PointCloudLayer) {
     camera.far = 2.0 * size.length();
 
     const position = root.bbox.min.clone().add(
-        size.multiply({ x: 1, y: 1, z: size.x / size.z }),
+        size.multiply(new Vector3(1, 1, size.x / size.z)),
     );
 
     camera.position.copy(position);
@@ -163,8 +163,8 @@ export async function run(url: string) {
     }) as PointCloudLayer;
 
     (layer.material as PointsMaterial).mode = 2;
-    const promise = View.prototype.addLayer.call(view, layer) as Promise<PointCloudLayer>;
-    promise.then(layer => onLayerReady(view, layer));
+    (View.prototype.addLayer.call(view, layer) as Promise<PointCloudLayer>)
+        .then(layer => onLayerReady(view, layer));
     new PointCloudGUI(view, layer, {
         title: layer.id,
         parent: gui,
@@ -188,8 +188,11 @@ export async function run(url: string) {
     G.set({ kernel: new LazyStaticKernelNode(G.get('kernelSize')!.toDep(), G.get('kernelType')!.toDep()) });
     G.set({
         edlPass: new EDLPassNode(
-            G.get('renderView')!.toDep(), G.get('view')!.toDep('renderer'),
-            16, { kernel: G.get('kernel')!.toDep() }, true
+            G.get('renderView')!.toDep(), G.get('view')!.toDep('renderer'), 16, view.camera.camera3D,
+            {
+                kernel: G.get('kernel')!.toDep(),
+            },
+            true,
         )
     });
 
@@ -197,7 +200,7 @@ export async function run(url: string) {
     view.render = function render() {
         G.getOutput(frame++, G.get('edlPass')!);
         // Reach cruising speed before dumping so timing information is accurate
-        if (frame == 1000) {
+        if (frame == 100) {
             window.open(G.dumpDotGraphvizLink(), '_blank', 'popup');
         }
     };

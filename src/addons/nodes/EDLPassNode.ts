@@ -1,4 +1,5 @@
-import { graph } from 'itowns';
+import { graph, } from 'itowns';
+import { OrthographicCamera } from 'three';
 
 // TODO: add depth, resolution, cameraNear and cameraFar fields to ScreenShaderNode shaders by default
 // also split ScreenShaderNode _apply into multiple functions to allow for better composition in inheriting classes
@@ -7,8 +8,9 @@ export default class EDLPassNode extends graph.ScreenShaderNode {
         target: graph.Dependency,
         renderer: graph.Dependency,
         kernelSize: number,
+        camera: OrthographicCamera,
         uniforms: {
-            kernel?: graph.Dependency,
+            kernel: graph.Dependency,
         } & { [name: string]: graph.Dependency },
         toScreen: boolean = false
     ) {
@@ -18,11 +20,11 @@ export default class EDLPassNode extends graph.ScreenShaderNode {
                 defines: { KERNEL_SIZE: kernelSize },
                 uniforms,
                 auxCode: /* glsl */`
-uniform sampler2D tDepth;
-
 uniform vec2 resolution;
 uniform float cameraNear;
 uniform float cameraFar;
+
+uniform sampler2D tDepth;
 
 uniform vec2 kernel[KERNEL_SIZE];
 
@@ -54,17 +56,20 @@ float shadow(float depth) {
 float depth = getLinearDepth(vUv);
 float res = shadow(depth);
 
-float edl = exp(- 300.0 * res * 6000.);
+float edl = exp(-300. * res * 6000.);
 
 int val = int(mod(dot(vUv, resolution), float(KERNEL_SIZE)));
 vec2 got = kernel[val];
 
-return vec4(edl, 0., 0., tex.a);
-// return vec4(tex.rgb * edl, tex.a);
+// return vec4(edl, 0., 0., tex.a);
+return vec4(tex.rgb * edl, tex.a);
 `,
             },
             toScreen
         });
+
+        // HACK: Once we split View up into different nodes we can just have a lazystatic camera dependency
+        graph.ScreenShaderNode._camera = camera;
 
         console.log(graph.ScreenShaderNode.buildFragmentShader(this.fragmentShaderParts));
     }

@@ -178,7 +178,7 @@ function onLayerReady(layer: PointCloudLayer) {
     camera.far = 2.0 * size.length();
 
     const position = root.bbox.min.clone().add(
-        size.multiply({ x: 1, y: 1, z: size.x / size.z }),
+        size.multiply(new Vector3(1, 1, size.x / size.z)),
     );
 
     camera.position.copy(position);

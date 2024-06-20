@@ -48,6 +48,8 @@ class EDLPass extends Pass {
     private _kernel: Float32Array;
     private _fsQuad: FullScreenQuad;
 
+    private _logged: boolean = false;
+
     constructor(camera: CameraLike, width: number, height: number, kernelSize = 16) {
         super();
 
@@ -95,6 +97,12 @@ class EDLPass extends Pass {
     ) {
         this.edlMaterial.uniforms.tDepth.value = readBuffer.depthTexture;
         this.edlMaterial.uniforms.tDiffuse.value = readBuffer.texture;
+
+        if (!this._logged) {
+            console.log(this._kernel);
+            console.log(this.camera.near, this.camera.far);
+            this._logged = true;
+        }
 
         renderer.setRenderTarget(this.renderToScreen ? null : writeBuffer);
 
